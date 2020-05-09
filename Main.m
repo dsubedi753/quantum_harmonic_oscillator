@@ -1,5 +1,5 @@
-% clear, clc
-% sys = pdeSys;
+% % clear, clc
+% % sys = pdeSys;
 option = 1;
 failed = true;
 arr = @(f) trapz(sys.X, sys.U(f,:).*conj(sys.U(f,:)));
