@@ -1,18 +1,93 @@
  classdef pdeSys < handle
-    % pdeSys Summary of this class goes here
-    %   Detailed explanation goes here
+    % This simulates a quantum system
+    % It takes initial waveform of a particle as an input and simulates
+    % its evolution usind Adams-Bashforth-Moulton solver of first degree
+    %
+    % pdeSys(a_in,b_in,NumInNodex_in)
+    %   Constructor initializes a system when a instance is created.
+    %   It takes a,b (boundary points) and N (number of innner nodes)
+    %   as input. a and b
+    %   When the data is not present they are taken as 0,1, and 100
+    %   respectively
+    %   It initalizes the vector X(discitizaation of space)
+    %   It also initalizes the Matrix to calculate 2nd order
+    %   derivative with respect to position
+    %
+    % pdeSys Properties
+    %   X_all       -- Space Vector plus end noddes
+    %   M           -- The 2nd Derivative matrix
+    %   h           -- Internode Length
+    %   t           -- time
+    %   b_cond      -- boundary condition type
+    %   Ua          -- End Node 1
+    %   Ub          -- End Node 2
+    %   K           -- K value
+    %   Uf          -- Final Value
+    %   U           -- Time Stepped Vector
+    %   P           -- Probablity
+    %   Up          -- In momentum-space
+    %   init_cond   -- intial condition function
+    %   N           -- Number of inne r nodes
+    %   a           -- Min end point
+    %   b           -- Max end poiny
+    %   X           -- Vector discretization of space
+    %   pX          -- Vector for discretization of momentum
+    %   U0          -- Initial Values
+    %
+    % pdeSys Methods (Set)
+    %   set.init_cond(sf_in) -- Change Initial Condition
+    %
+    % pdeSys Methods (Calculation)
+    %   calc_all(end_time)
+    %       Calculate the time evolution of wave function for given amount of time
+    %       This generates a matrix U that contains the state of wave-function at all time steps
+    %       Each instance of wavefunction is stored in row of U
+    %           end_time -- specifies the total time for which wave function is simulated
+    %
+    %   calc_prob
+    %       Calculates the probablity using the wavefuction
+    %
+    %   calc_momentum
+    %       Uses fourier transformation to convert from position to momentum domain
+    %
+    %
+    % pdeSys Methods(Plot)
+    %   plot_continous(speed, last_frame, name)      
+    %       Contiously plots wave function as an animation
+    %       speed(opt)      -- speed of plotting
+    %       last_frame(opt) -- last frame to be plotted
+    %       name(opt)       -- name of the file if movie is to be created
+    %   plot_frame(frame)          
+    %       Plots specific frame of wave function
+    %       frame           -- specifies the frame
+    %   plot_momentum(frame)
+    %       Plots specific frame of wave function in momentum domain 
+    %       frame           -- specifies the frame
+    %   plot_pdf_continous(speed, last_frame, name)      
+    %       Contiously plots probability as an animation
+    %       speed(opt)      -- speed of plotting
+    %       last_frame(opt) -- last frame to be plotted
+    %       name(opt)       -- name of the file if movie is to be created
+    %   plot_pdf_frame(frame) 
+    %       Plots specific frame of probability 
+    %       frame           -- specifies the frame
+    %   plot_pdf_step(row,column)
+    %       Plots number subplots of probabilty at different times
+    %       row             -- number of rows in subplot
+    %       column          -- number of columns in subplot
+    
     
     properties(GetAccess = public, SetAccess = private, Hidden = true)
         X_all               % Space Vector plus end noddes
         M                   % The 2nd Derivative matrix
         h                   % Internode Length
         t                   % time
-        b_cond = "drc"      % boundary condition type (nul)
+        b_cond = "drc"      % boundary condition type
         Ua = 0              % End Node 1
         Ub = 0              % End Node 2
         source              % Source Vector
         K = 1i              % K value
-        Uf                  %Final Value
+        Uf                  % Final Value
     end
     
     properties(Access = public, Hidden = true)
@@ -28,18 +103,25 @@
     end
     
     properties(GetAccess = public, SetAccess = private)
-        N                   %Number of inner nodes
+        N                   %Number of inne r nodes
         a                   %Min end point
         b                   %Max end poiny
-        X                   %Space Vector
-        pX                  %Momentum Vector
+        X                   %Vector for discretization of space
+        pX                  %Vector for discretization of momentum
         U0                  %Initial Values
     end
     
     %Maker Methods
     methods
         function obj = pdeSys(a_in,b_in,NumInNodex_in)
-            %Contructor method
+            % Constructor initializes a system when a instance is created.
+            % It takes a,b (boundary points) and N (number of innner nodes)
+            % as input. a and b
+            % When the data is not present they are taken as 0,1, and 100
+            % respectively
+            % It initalizes the vector X(discitizaation of space)
+            % It also initalizes the Matrix to calculate 2nd order
+            % derivative with respect to position
             
             %Correction for inputs
             narginchk(0,3);
@@ -67,18 +149,19 @@
             obj.Ua = obj.init_cond(obj.a);
             obj.Ub = obj.init_cond(obj.b);
             
-            %Make the system
+            % Make the system
             obj.make_innerNodes()
             obj.make_FDmatrix()
         end
         
         function make_FDmatrix(obj)
-            %Makes the finite difference Matrix
+            % Makes Matrix to calculate 2nd order derivative with respect to position for dirichlet boundary condition
             FDM = diag(-2*ones(obj.N,1),0) + diag(ones(obj.N-1,1),1) + diag(ones(obj.N-1,1),-1); 
             obj.M = FDM;
         end
         
         function make_innerNodes(obj)
+            % Discretize the space
             obj.X_all = linspace(obj.a,obj.b,obj.N+2).';
             obj.X = obj.X_all(2:end-1);
             obj.h = obj.X(2) - obj.X(1);
@@ -89,15 +172,14 @@
         
     end
     
-    %Calulating Methods
+    
     methods
-        
-        function calc_final(obj)
-            obj.make_FDmatrix();
-            obj.Uf = -obj.M\(obj.h^2*obj.source/obj.K);
-        end
-        
+    %Calulating Methods 
         function calc_all(obj,end_time)
+            % Calculate the time evolution of wave function for given amount of time
+            % This generates a matrix U that contains the state of wave-function at all time steps
+            % Each instance of wavefunction is stored in row of U
+            % end_time -- specifies the total time for which wave function is simulated
             obj.make_FDmatrix();
              opts = odeset('Reltol',1e-5,'AbsTol',1e-6, 'Stats','on');
             [t,obj.U] = ode113(@dU,[0,end_time],obj.U0.',opts); % time stepping
@@ -107,10 +189,13 @@
         end
         
         function calc_prob(obj)
+            % Calculates the probablity using the wavefuction
             obj.P = obj.U.*conj(obj.U);
         end
         
         function calc_momentum(obj)
+            % Uses fourier transformation to convert from position to
+            % momentum domain
             y = fft(obj.U.');                   % Compute DFT of U
             y = y.';
             m = abs(y);                         % Magnitude
@@ -122,31 +207,31 @@
     
     %Plot Methods
     methods
-		function plot_pdf_step(obj)
+		function plot_pdf_step(obj,row,column)
+            % Plots number subplots of probabilty at different times
+            % row -- number of rows in subplot
+            % column -- number of columns in subplot
+            num = row*column;
             figure(1)
             clf
-            subplot(2,2,1)
+            num = row*column;
+            subplot(row,column,1)
             plot(obj.X,obj.P(1,:).' )
             ylim([min(obj.P, [],'all'), max(obj.P, [],'all')])
             xlabel("x")
             ylabel("P(x)")
             grid on
             
-            subplot(2,2,2)
-            plot(obj.X, obj.P(round(size(obj.P,1)/3),:).')
+            for ii = 1: (num-1)
+            subplot(row,column,ii+1)
+            plot(obj.X, obj.P(ii*round(size(obj.P,1)/num),:).')
             ylim([min(obj.P, [],'all'), max(obj.P, [],'all')])
             xlabel("x")
             ylabel("P(x)")
-            grid on
-
-            subplot(2,2,3)
-            plot(obj.X, obj.P(round(2*size(obj.P,1)/3),:).')
-            ylim([min(obj.P, [],'all'), max(obj.P, [],'all')])
-            xlabel("x")
-            ylabel("P(x)")
-            grid on
+            grid on  
+            end
             
-            subplot(2,2,4)
+            subplot(row,column,num)
             plot(obj.X, obj.P(end,:).')
             ylim([min(obj.P, [],'all'), max(obj.P, [],'all')])
             xlabel("x")
@@ -155,6 +240,8 @@
         end
         
         function plot_frame(obj,frame)
+            % Plots specific frame of wave function
+            % frame -- specifies the frame
             figure(2)
             clf
             
@@ -182,6 +269,8 @@
         end
 		
 		function plot_pdf_frame(obj,frame)
+            % Plots specific frame of probability
+            % frame -- specifies the frame
             figure(3)
             clf
             plot(obj.X, obj.P(frame,:));
@@ -196,9 +285,10 @@
         end
         
         function plot_continous(obj, speed, last_frame, name)
-            %speed -- speed of plotting
-            %last_frame -- last frame to be plotted
-            %name -- name of the file if movie is to be created
+            % Contiously plots wave function as an animation
+            % speed -- speed of plotting
+            % last_frame -- last frame to be plotted
+            % name -- name of the file if movie is to be created
             
             narginchk(1,4)
             switch nargin
@@ -246,7 +336,7 @@
             lnh.ZDataSource = 'Uplot_r';
             
             if nargin > 3
-                %Write a Movie
+                % Stoes movie as frames
                 count = 1;
                 movieVector(count) = getframe(gcf);
                 
@@ -265,7 +355,7 @@
                 open(movieObj);
                 writeVideo(movieObj, movieVector);
             else
-                % Continue Plotting
+                % Continous Plotting
                 for ii = 2:speed:min(last_frame,size(obj.U,1))
                     Uplot_i = imag(obj.U(ii,:).');
                     Uplot_r = real(obj.U(ii,:).');
@@ -276,6 +366,7 @@
         end
         
         function plot_pdf_continous(obj,speed, last_frame, name)
+            %Contiously plots probability as an animation
             %speed -- speed of plotting
             %last_frame -- last frame to be plotted
             %name -- name of the file if movie is to be created
@@ -312,7 +403,7 @@
 			lnh.YDataSource = 'Pplot';
             
             if nargin > 3
-                %Write a Movie
+                % Stoes movie as frames
                 count = 1;
                 movieVector(count) = getframe(gcf);
                 
@@ -330,7 +421,7 @@
                 open(movieObj);
                 writeVideo(movieObj, movieVector);
             else
-                % Continue Plotting
+                % Continous Plotting
                 for ii = 2:speed:min(last_frame,size(obj.U,1))
                     Pplot = obj.P(ii,:).';
 					refreshdata(lnh, 'caller')
@@ -340,6 +431,7 @@
         end
         
         function plot_momentum(obj,frame)
+            % Plots specific frame of wave function in momentum domain
             figure(6)
             clf
             narginchk(1,2)
@@ -388,7 +480,7 @@
         end
         
         function set.pot_fun(obj,sf_in)
-            %Change source
+            %Change potential function
             obj.pot_fun = sf_in;
             obj.source = obj.pot_fun(obj.X);
         end

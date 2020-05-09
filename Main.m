@@ -1,7 +1,8 @@
-clear, clc
-sys = pdeSys;
+% clear, clc
+% sys = pdeSys;
 option = 1;
 failed = true;
+arr = @(f) trapz(sys.X, sys.U(f,:).*conj(sys.U(f,:)));
 while ~(option == -1)
     fprintf("1- Input a new inital function (Make a new system) \n");
     fprintf("2- Plot a specific frame of wavefunction \n");
@@ -39,7 +40,9 @@ while ~(option == -1)
         case 3
             sys.plot_continous(10);
         case 4
-            sys.plot_pdf_step
+            row = input("Enter number of rows");
+            column = input("Enter number of column");
+            sys.plot_pdf_step(row,column)
         case 5
             frame = input("Enter Frame: ");
             sys.plot_pdf_frame(frame)
