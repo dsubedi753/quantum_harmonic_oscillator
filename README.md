@@ -1,6 +1,6 @@
 # Quantum Harmonic Oscillator
 
-This was project for MATH 399 (Numerical Approach to Partial Differential Equations).
+This was my final project for MATH 399 (Numerical Approach to Partial Differential Equations).
 
 ## Feature
  - Simulates given valid ave function to estimate the time-evolution of wave function
